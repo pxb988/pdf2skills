@@ -14,5 +14,9 @@ venv/
 htmlcov/
 .coverage
 *.so
+.DS_Store
 _reference/
 output/
+.pdf2skills/
+pdf/
+install.sh

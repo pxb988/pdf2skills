@@ -29,6 +29,17 @@ python -m spacy download en_core_web_sm 2>/dev/null
 
 `{project_root}` is the directory containing this skill's `src/` folder (find it by locating `src/cli.py`).
 
+### Configuration (Optional)
+
+PDF parsing defaults to Claude Code's Read tool (zero config). For better quality on complex PDFs, configure an external LLM provider:
+
+1. Copy `.env.example` to `.pdf2skills/.env` in the project root (or `~/.pdf2skills/.env` for user-level).
+2. Set `LLM_PROVIDER` to your provider (e.g., `deepseek`, `openai`, `qwen`).
+3. Set the corresponding `{PROVIDER}_API_KEY`.
+4. The pipeline will auto-detect and use the LLM for PDF→Markdown conversion.
+
+Supported providers: OpenAI, Anthropic, Google, DeepSeek, 智谱 GLM, Qwen, SiliconFlow, or any OpenAI-compatible endpoint (use `custom`).
+
 ## Execution Workflow
 
 Throughout execution, keep the user informed of progress — this is a long-running pipeline. Report which step you're on and what percentage of the work is done.

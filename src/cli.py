@@ -20,10 +20,20 @@ def cmd_parse_pdf(args: argparse.Namespace) -> None:
     pdf_path = Path(args.pdf)
     output_dir = Path(args.output)
 
-    if config.pdf_parser == "mineru" and config.mineru_api_key:
+    resolved = config.resolve_pdf_parser()
+
+    if resolved == "mineru" and config.mineru_api_key:
         from .pdf_parser.mineru_parser import MineruParser
 
         parser = MineruParser(config.mineru_api_key, config.mineru_base_url)
+    elif resolved == "llm":
+        active = config.get_active_llm()
+        if active is None:
+            print(json.dumps({"error": "pdf_parser=llm but no active LLM provider configured"}))
+            sys.exit(1)
+        from .pdf_parser.llm_parser import LLMPDFParser
+
+        parser = LLMPDFParser(active)
     else:
         from .pdf_parser.claude_parser import ClaudeParser
 
@@ -32,6 +42,7 @@ def cmd_parse_pdf(args: argparse.Namespace) -> None:
     markdown = parser.parse(pdf_path, output_dir)
     print(json.dumps({
         "status": "ok",
+        "parser": resolved,
         "output": str(output_dir / "full.md"),
         "chars": len(markdown),
     }))

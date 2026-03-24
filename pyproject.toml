@@ -1,0 +1,26 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pdf2skills"
+version = "2.0.0"
+description = "Convert PDF documents into Claude Code Skills via AI semantic analysis"
+requires-python = ">=3.11"
+dependencies = [
+    "spacy>=3.7",
+    "jieba>=0.42",
+    "numpy>=1.24",
+    "scikit-learn>=1.3",
+    "PyPDF2>=3.0",
+]
+
+[project.optional-dependencies]
+mineru = ["requests", "python-dotenv"]
+dev = ["pytest>=7.0", "pytest-cov"]
+
+[project.scripts]
+pdf2skills = "src.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

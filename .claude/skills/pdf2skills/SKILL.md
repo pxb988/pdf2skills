@@ -14,6 +14,8 @@ The pipeline reads a PDF, breaks it into semantically coherent chunks, identifie
 ```
 PDF → Markdown → Chunks → Density Scores → SKUs → Buckets → Skills → Router
       (Read)    (Agent)   (Python+Agent)   (Agent) (Python)  (Agent)  (Agent)
+  ↑
+  └─ Markdown input skips this step
 ```
 
 ## Before You Start
@@ -44,23 +46,27 @@ Supported providers: OpenAI, Anthropic, Google, DeepSeek, 智谱 GLM, Qwen, Sili
 
 Throughout execution, keep the user informed of progress — this is a long-running pipeline. Report which step you're on and what percentage of the work is done.
 
-### Step 1: Setup and PDF Reading
+### Step 1: Setup and Input Reading
 
-1. Confirm the PDF path with the user. Resolve it to an absolute path.
+1. Confirm the input path with the user. Resolve it to an absolute path.
 2. Locate the project root (the directory containing `src/cli.py`). All `python -m src.cli` commands must run from this directory.
-3. Create the output directory next to the PDF: `{pdf_stem}_output/`
-4. Get the page count:
-   ```bash
-   cd {project_root} && source .venv/bin/activate && python -m src.cli page-count "{pdf_path}"
-   ```
-5. Read the PDF page by page using the Read tool with the `pages` parameter (max 20 pages per call). Combine all content into a single Markdown document.
-6. Write the result to `{output_dir}/full.md`.
-
-Tell the user: "PDF read complete — {N} pages extracted."
+3. Create the output directory next to the input file: `{input_stem}_output/`
+4. **If the input is a Markdown file (`.md`):**
+   - Copy or symlink it to `{output_dir}/full.md` (or treat it directly as `full.md`).
+   - Tell the user: "Markdown input detected — skipping PDF extraction, proceeding to chunking."
+   - Skip to Step 2.
+5. **If the input is a PDF:**
+   - Get the page count:
+     ```bash
+     cd {project_root} && source .venv/bin/activate && python -m src.cli page-count "{pdf_path}"
+     ```
+   - Read the PDF page by page using the Read tool with the `pages` parameter (max 20 pages per call). Combine all content into a single Markdown document.
+   - Write the result to `{output_dir}/full.md`.
+   - Tell the user: "PDF read complete — {N} pages extracted."
 
 ### Step 2: Semantic Chunking
 
-Read the prompt template at `{project_root}/skills/pdf2skills/prompts/chunking.md`, then dispatch an Agent to perform the chunking.
+Read the prompt template at `{project_root}/.claude/skills/pdf2skills/prompts/chunking.md`, then dispatch an Agent to perform the chunking.
 
 Provide the Agent with:
 - The full Markdown content (or path to `full.md`)

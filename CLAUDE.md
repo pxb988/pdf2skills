@@ -6,12 +6,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 pdf2skills 将 PDF 文档（专业书籍、操作手册、行业报告、技术规范、教材、标准文件）通过 AI 语义分析，转成一套结构完整、可直接导入 Claude Code 的技能包（Skill Pack）。
 
-采用混合架构：**Claude Code Skill 编排** (`skills/pdf2skills/SKILL.md`) + **Python NLP 计算** (`src/`)。
+采用混合架构：**Claude Code Skill 编排** (`.claude/skills/pdf2skills/SKILL.md`) + **Python NLP 计算** (`src/`)。
 
 Pipeline 数据流：
 ```
 PDF → Markdown → Chunks → Density Scores → SKUs → Buckets → Skills → Router
       (Read)    (Agent)   (Python+Agent)   (Agent) (Python)  (Agent)  (Agent)
+  ↑
+  └─ Markdown input (.md) 跳过此步，直接进入 Chunks
 ```
 
 ## Build & Test Commands
@@ -50,12 +52,12 @@ python -m src.cli parse-pdf <pdf> -o <out_dir>   # 独立 PDF 解析
 
 ### 双层设计
 
-- **Skill 层** (`skills/pdf2skills/SKILL.md`)：Pipeline 编排入口，被 Claude Code `/pdf2skills` 命令触发。通过 Bash tool 调用 Python CLI，通过 Agent tool 分发 LLM 任务。Prompt 模板在 `skills/pdf2skills/prompts/`。
+- **Skill 层** (`.claude/skills/pdf2skills/SKILL.md`)：Pipeline 编排入口，被 Claude Code `/pdf2skills` 命令触发。通过 Bash tool 调用 Python CLI，通过 Agent tool 分发 LLM 任务。Prompt 模板在 `.claude/skills/pdf2skills/prompts/`。
 - **Python 层** (`src/`)：纯计算模块。CLI 入口 `src/cli.py` 分发到各子模块。除 `src/llm/client.py`（用于 LLM PDF 解析）外，不依赖外部 API。
 
 ### Skill 编排 — SKILL.md
 
-`skills/pdf2skills/SKILL.md` 是 pipeline 主入口，定义了：
+`.claude/skills/pdf2skills/SKILL.md` 是 pipeline 主入口，定义了：
 - 触发条件（description 字段匹配用户意图）
 - 环境准备（venv + 依赖检查）
 - 8 步工作流的完整编排逻辑

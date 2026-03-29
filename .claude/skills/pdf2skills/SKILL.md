@@ -12,8 +12,8 @@ Transform PDF documents into structured, callable Claude Code Skills through a m
 The pipeline reads a PDF, breaks it into semantically coherent chunks, identifies high-value knowledge regions, extracts structured knowledge units, deduplicates them, and converts them into Claude Code Skill format.
 
 ```
-PDF → Markdown → Chunks → Density Scores → SKUs → Buckets → Skills → Router
-      (Read)    (Agent)   (Python+Agent)   (Agent) (Python)  (Agent)  (Agent)
+PDF → Markdown → Chunks → Density → SKUs → Buckets → Skills → Optimize → Router
+      (Read)    (Agent)  (Py+Agent) (Agent) (Python) (Agent)  (skill-creator) (Agent)
   ↑
   └─ Markdown input skips this step
 ```
@@ -131,6 +131,31 @@ Read `{project_root}/skills/pdf2skills/prompts/skill-generation.md`. For each bu
 - Format: `{skill-name}/SKILL.md` + optional `{skill-name}/references/`
 
 Tell the user: "Generated {N} skills from {M} knowledge units."
+
+### Step 6b: Skill Quality Optimization (skill-creator)
+
+For each generated skill in `{output_dir}/generated_skills/`, dispatch an Agent to run the skill-creator optimization loop:
+
+1. **Locate skill-creator**: Find it at `~/.claude/skills/skill-creator/` or the project's `.claude/skills/skill-creator/`.
+2. **Generate evals**: Based on the skill's name, description, and SKILL.md content, generate a `evals.json` test set (10–20 cases: ~60% should_trigger, ~40% should not) and write it to `{skill_dir}/evals.json`.
+3. **Run description optimization loop**:
+   ```bash
+   cd ~/.claude/skills/skill-creator && python -m scripts.run_loop \
+     --skill "{skill_dir}/SKILL.md" \
+     --evals "{skill_dir}/evals.json" \
+     --max-iterations 3 \
+     --num-workers 4
+   ```
+4. **Generate review report**:
+   ```bash
+   cd ~/.claude/skills/skill-creator && python eval-viewer/generate_review.py \
+     "{skill_dir}/evals.json" -o "{skill_dir}/eval_report.html"
+   ```
+5. Write the optimized description back to `{skill_dir}/SKILL.md` frontmatter.
+
+Process skills in parallel (one Agent per skill) for efficiency.
+
+Tell the user: "Skill optimization complete — descriptions refined for {N} skills."
 
 ### Step 7: Router and Glossary
 

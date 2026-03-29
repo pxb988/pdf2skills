@@ -25,7 +25,7 @@ The Python helpers need a few dependencies. Check if they're installed, and if n
 ```bash
 cd {project_root}
 source .venv/bin/activate 2>/dev/null || python3.12 -m venv .venv && source .venv/bin/activate
-pip install spacy jieba numpy scikit-learn PyPDF2 python-dotenv 2>/dev/null
+pip install spacy jieba numpy scikit-learn PyPDF2 python-dotenv anthropic 2>/dev/null
 python -m spacy download en_core_web_sm 2>/dev/null
 ```
 

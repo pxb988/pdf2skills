@@ -16,7 +16,9 @@ htmlcov/
 *.so
 .DS_Store
 _reference/
-output/
+output/*
+!output/.gitkeep
 .pdf2skills/
-pdf/
+pdf/*
+!pdf/.gitkeep
 install.sh

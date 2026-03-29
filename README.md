@@ -27,7 +27,29 @@ pip install -e ".[dev]"
 python -m spacy download en_core_web_sm
 ```
 
-### 2. 安装 Skill 到 Claude Code
+### 2. 配置工作区
+
+```bash
+# 复制配置模板
+cp .pdf2skills/.env.example .pdf2skills/.env   # 如使用项目级配置
+# 或
+mkdir -p ~/.pdf2skills && cp .pdf2skills/.env.example ~/.pdf2skills/.env  # 用户级配置（推荐）
+```
+
+编辑 `.pdf2skills/.env`，填入至少一个 LLM Provider 的 API Key：
+
+```ini
+# 选择一个 Provider（取消注释并填入 key）
+LLM_PROVIDER=deepseek
+DEEPSEEK_API_KEY=sk-...
+
+# PDF 解析器（默认 auto，优先使用 MinerU）
+# PDF_PARSER=auto
+```
+
+将待处理的 PDF 放入 `pdf/` 目录，pipeline 输出将写入 `output/`。
+
+### 3. 安装 Skill 到 Claude Code
 
 ```bash
 # 方式一：项目级（仅当前项目可用）

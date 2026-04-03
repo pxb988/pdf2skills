@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "pdf2skills"
 version = "2.1.0"
-description = "Convert PDF documents into Claude Code Skills via AI semantic analysis"
+description = "Convert PDF or Markdown documents into Claude Code Skills via AI semantic analysis"
 requires-python = ">=3.11"
 dependencies = [
     "spacy>=3.7",

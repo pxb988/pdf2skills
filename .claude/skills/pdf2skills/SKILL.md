@@ -20,11 +20,11 @@ PDF → Markdown → Chunks → Density → SKUs → Buckets → Skills → Opti
 
 ## Before You Start
 
-The Python helpers need a few dependencies. Check if they're installed, and if not, set them up:
+The Python helpers need a few dependencies. Check if they're installed, and if not, set them up. Python 3.11+ is supported, and 3.12 is recommended:
 
 ```bash
 cd {project_root}
-source .venv/bin/activate 2>/dev/null || python3.12 -m venv .venv && source .venv/bin/activate
+source .venv/bin/activate 2>/dev/null || python3 -m venv .venv && source .venv/bin/activate
 pip install spacy jieba numpy scikit-learn PyPDF2 python-dotenv requests anthropic 2>/dev/null
 python -m spacy download en_core_web_sm 2>/dev/null
 ```

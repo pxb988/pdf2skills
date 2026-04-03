@@ -31,12 +31,12 @@
 
 ## 快速开始
 
-### 1. 安装依赖
+### 1. 安装依赖（Python 3.11+，推荐 3.12）
 
 ```bash
 git clone https://github.com/pxb988/pdf2skills.git
 cd pdf2skills
-python3.12 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 python -m spacy download en_core_web_sm

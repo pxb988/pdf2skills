@@ -1,11 +1,11 @@
 ---
 name: pdf2skills
-description: Convert any PDF document (professional books, operation manuals, industry reports, technical specifications, textbooks, standards documents) into a complete set of structured Claude Code Skills through AI semantic analysis. The output is a ready-to-install skill pack that can be directly invoked in Claude Code. Use this skill whenever the user wants to extract knowledge from a PDF and turn it into reusable skills, even if they don't say "pdf2skills" explicitly. Trigger for phrases like "convert this book to skills", "extract skills from PDF", "turn this manual into something Claude can use", "make skills from this document", "I have a PDF I want to learn from", or any request involving a PDF path combined with intent to create callable knowledge. Also trigger when the user provides a PDF and asks to "break it down", "structure the knowledge", or "make it actionable".
+description: Convert any PDF or Markdown document (professional books, operation manuals, industry reports, technical specifications, textbooks, standards documents) into a complete set of structured Claude Code Skills through AI semantic analysis. The output is a ready-to-install skill pack that can be directly invoked in Claude Code. Use this skill whenever the user wants to extract knowledge from a PDF or Markdown document and turn it into reusable skills, even if they don't say "pdf2skills" explicitly. Trigger for phrases like "convert this book to skills", "extract skills from PDF", "turn this manual into something Claude can use", "make skills from this document", "I have a PDF or Markdown file I want to learn from", or any request involving a PDF/Markdown path combined with intent to create callable knowledge. Also trigger when the user provides a PDF or Markdown file and asks to "break it down", "structure the knowledge", or "make it actionable".
 ---
 
-# PDF to Skills Pipeline
+# PDF / Markdown to Skills Pipeline
 
-Transform PDF documents into structured, callable Claude Code Skills through a multi-stage pipeline that combines Python NLP computation with AI semantic analysis.
+Transform PDF or Markdown documents into structured, callable Claude Code Skills through a multi-stage pipeline that combines Python NLP computation with AI semantic analysis.
 
 ## How It Works
 
@@ -25,7 +25,7 @@ The Python helpers need a few dependencies. Check if they're installed, and if n
 ```bash
 cd {project_root}
 source .venv/bin/activate 2>/dev/null || python3.12 -m venv .venv && source .venv/bin/activate
-pip install spacy jieba numpy scikit-learn PyPDF2 python-dotenv anthropic 2>/dev/null
+pip install spacy jieba numpy scikit-learn PyPDF2 python-dotenv requests anthropic 2>/dev/null
 python -m spacy download en_core_web_sm 2>/dev/null
 ```
 
@@ -88,7 +88,7 @@ cd {project_root} && source .venv/bin/activate && python -m src.cli density "{ou
 The output includes `calibration_sample_ids` — a list of chunk IDs selected for LLM calibration.
 
 **3b. LLM calibration** (Agent):
-Read `{project_root}/skills/pdf2skills/prompts/density-calibration.md`. Dispatch an Agent to score each calibration sample chunk (0–100). Write scores to `{output_dir}/gold_scores.json` as `{"chunk_id": score, ...}`.
+Read `{project_root}/.claude/skills/pdf2skills/prompts/density-calibration.md`. Dispatch an Agent to score each calibration sample chunk (0–100). Write scores to `{output_dir}/gold_scores.json` as `{"chunk_id": score, ...}`.
 
 **3c. Apply calibration** (Python):
 ```bash
@@ -101,7 +101,7 @@ Tell the user: "Density analysis complete — weights calibrated."
 
 SKUs (Standardized Knowledge Units) are the atomic building blocks — each one captures a single piece of actionable knowledge with its context, trigger conditions, and logic.
 
-Read `{project_root}/skills/pdf2skills/prompts/sku-extraction.md`. Dispatch Agent(s) to extract SKUs from high-density chunks (top 80% by `final_score` in `density_scores.json`).
+Read `{project_root}/.claude/skills/pdf2skills/prompts/sku-extraction.md`. Dispatch Agent(s) to extract SKUs from high-density chunks (top 80% by `final_score` in `density_scores.json`).
 
 For books with many chunks, dispatch multiple Agents in parallel — one per group of 5–8 chunks. Each Agent writes SKU JSON files to `{output_dir}/skus/skus/` and appends to `{output_dir}/skus/skus_index.json`.
 
@@ -117,13 +117,13 @@ cd {project_root} && source .venv/bin/activate && python -m src.cli similarity "
 ```
 
 **5b. Tag normalization** (Agent):
-Read `{project_root}/skills/pdf2skills/prompts/knowledge-fusion.md`. Dispatch an Agent to normalize `applicable_objects` and `domain_tags` across all SKUs, then update the SKU files in place.
+Read `{project_root}/.claude/skills/pdf2skills/prompts/knowledge-fusion.md`. Dispatch an Agent to normalize `applicable_objects` and `domain_tags` across all SKUs, then update the SKU files in place.
 
 Tell the user: "Knowledge fusion complete — {N} buckets formed."
 
 ### Step 6: Skill Generation
 
-Read `{project_root}/skills/pdf2skills/prompts/skill-generation.md`. For each bucket in `{output_dir}/skus/buckets.json`, dispatch an Agent to convert the SKUs into Claude Code Skills.
+Read `{project_root}/.claude/skills/pdf2skills/prompts/skill-generation.md`. For each bucket in `{output_dir}/skus/buckets.json`, dispatch an Agent to convert the SKUs into Claude Code Skills.
 
 - Process one bucket at a time (or parallel for independent buckets)
 - For buckets with >15 SKUs, split into batches
@@ -132,26 +132,29 @@ Read `{project_root}/skills/pdf2skills/prompts/skill-generation.md`. For each bu
 
 Tell the user: "Generated {N} skills from {M} knowledge units."
 
-### Step 6b: Skill Quality Optimization (skill-creator)
+### Step 6b: Skill Quality Optimization (skill-creator, optional)
+
+If `skill-creator` is not installed at either `~/.claude/skills/skill-creator/` or `{project_root}/.claude/skills/skill-creator/`, tell the user: "skill-creator not found — skipping optional optimization step." Then continue directly to Step 7.
 
 For each generated skill in `{output_dir}/generated_skills/`, dispatch an Agent to run the skill-creator optimization loop:
 
 1. **Locate skill-creator**: Find it at `~/.claude/skills/skill-creator/` or the project's `.claude/skills/skill-creator/`.
-2. **Generate evals**: Based on the skill's name, description, and SKILL.md content, generate a `evals.json` test set (10–20 cases: ~60% should_trigger, ~40% should not) and write it to `{skill_dir}/evals.json`.
-3. **Run description optimization loop**:
+2. **Choose the actual path**: If the project-level path exists, use it; otherwise use the user-level path.
+3. **Generate evals**: Based on the skill's name, description, and SKILL.md content, generate a `evals.json` test set (10–20 cases: ~60% should_trigger, ~40% should not) and write it to `{skill_dir}/evals.json`.
+4. **Run description optimization loop**:
    ```bash
-   cd ~/.claude/skills/skill-creator && python -m scripts.run_loop \
+   cd {skill_creator_root} && python -m scripts.run_loop \
      --skill "{skill_dir}/SKILL.md" \
      --evals "{skill_dir}/evals.json" \
      --max-iterations 3 \
      --num-workers 4
    ```
-4. **Generate review report**:
+5. **Generate review report**:
    ```bash
-   cd ~/.claude/skills/skill-creator && python eval-viewer/generate_review.py \
+   cd {skill_creator_root} && python eval-viewer/generate_review.py \
      "{skill_dir}/evals.json" -o "{skill_dir}/eval_report.html"
    ```
-5. Write the optimized description back to `{skill_dir}/SKILL.md` frontmatter.
+6. Write the optimized description back to `{skill_dir}/SKILL.md` frontmatter.
 
 Process skills in parallel (one Agent per skill) for efficiency.
 
@@ -161,9 +164,9 @@ Tell the user: "Skill optimization complete — descriptions refined for {N} ski
 
 Dispatch two Agents in parallel:
 
-1. **Router** — Read `{project_root}/skills/pdf2skills/prompts/router-generation.md`. Generate `{output_dir}/generated_skills/index.md` as a navigation index for all skills.
+1. **Router** — Read `{project_root}/.claude/skills/pdf2skills/prompts/router-generation.md`. Generate `{output_dir}/generated_skills/index.md` as a navigation index for all skills.
 
-2. **Glossary** — Read `{project_root}/skills/pdf2skills/prompts/glossary-extraction.md`. Generate `{output_dir}/glossary.json` with domain terminology extracted from SKUs.
+2. **Glossary** — Read `{project_root}/.claude/skills/pdf2skills/prompts/glossary-extraction.md`. Generate `{output_dir}/glossary.json` with domain terminology extracted from SKUs.
 
 ### Step 8: Deliver Results
 
@@ -199,6 +202,6 @@ Tell the user what was created and how to use it:
 
 ## Error Recovery
 
-Each stage is idempotent — if something fails, re-run from that stage without losing earlier work. The pipeline state tracks progress via the output directory structure (if a stage's output files exist, it completed successfully).
+Each stage is idempotent — if something fails, re-run from that stage without losing earlier work. The pipeline state is persisted in `{output_dir}/.pipeline_state.json`, and the output directory contents provide additional checkpoints for inspection and recovery.
 
 For very large PDFs (>100 pages), suggest splitting into parts first. The Read tool handles max 20 pages per call, so a 200-page book needs 10 read operations.

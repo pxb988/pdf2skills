@@ -1,30 +1,30 @@
 # pdf2skills
 
-将 PDF 或 Markdown 文档中的知识，转成一套结构化、可直接导入 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 的技能包（Skill Pack）。
+将 PDF 或 Markdown 文档中的知识，转成一套结构化、可供 AI agent 运行环境集成的技能包（Skill Pack）。
 
-本项目基于 [kitchen-engineer42/pdf2skills](https://github.com/kitchen-engineer42/pdf2skills) 重新设计，采用**Claude Code Skill 编排 + Python NLP 计算**的混合架构：
-- **Skill 层**负责长流程编排、SubAgent 调度和技能生成
+本项目基于 [kitchen-engineer42/pdf2skills](https://github.com/kitchen-engineer42/pdf2skills) 重新设计，采用**Skill 定义层 + Python 运行层**的混合架构：
+- **Skill 层**负责长流程编排、Agent 调度和技能生成
 - **Python 层**负责密度评分、相似度分桶、配置与状态管理
 
 ## 这次发布的更新
 
 本次发布版本为 **v2.1.0**。
 
-- Skill 已迁移到项目级 `.claude/skills/pdf2skills/`
+- Skill 定义位于 `skills/pdf2skills/`
 - 支持把 Markdown 直接放进 `pdf/`，跳过 PDF → Markdown 提取
 - Pipeline 新增 **Step 6b：skill-creator 优化**
 - 支持 **Custom OpenAI-compatible provider**
-- 输出目录、工作区结构、示例产物说明更完整
+- 输出目录与工作区约定更完整
 
 ## 与原项目的区别
 
 | 维度 | 原项目 | v2.1.0 |
 |------|--------|---------|
-| LLM 调用 | SiliconFlow API（需配置） | Claude Code SubAgent + 可选外部 LLM Provider |
+| LLM 调用 | SiliconFlow API（需配置） | Agent 调度 + 可选外部 LLM Provider |
 | 输入格式 | 主要面向 PDF | PDF + Markdown |
 | PDF 解析 | 仅 MinerU API | `auto / claude / mineru / llm / pypdf2` |
 | LLM Provider | 仅 SiliconFlow | 8 家可选，含自定义 OpenAI-compatible endpoint |
-| Skill 部署 | 需手动调整 | 项目级 `.claude/skills/` 可直接加载 |
+| Skill 部署 | 需手动调整 | 仓库内提供 `skills/pdf2skills/`，可按目标运行环境安装 |
 | 配置管理 | .env 散落各文件 | `PipelineConfig` + 分层 `.env` |
 | 测试 | 无 | pytest 测试覆盖核心模块 |
 | 断点恢复 | 无 | `.pipeline_state.json` 支持失败续跑 |
@@ -56,7 +56,7 @@ mkdir -p ~/.pdf2skills
 cp .env.example ~/.pdf2skills/.env
 ```
 
-最少只需配置一个可用的 LLM Provider；如果不配置，仍可使用 Claude Code Read tool 作为默认 PDF 读取方案。
+最少只需配置一个可用的 LLM Provider；如果不配置，也可使用本地 agent 运行环境提供的默认文档读取能力作为 PDF 读取方案。
 
 示例：
 
@@ -113,55 +113,39 @@ pdf/你的文件.md
 → pdf/你的文件_output/
 ```
 
-### 4. 最短操作清单
+### 4. CLI 用法
 
 如果环境已经装好，之后每次只要做这几步：
 
-1. 把文件放进 `pdf/` 目录，例如：
+1. 准备一个输入文件，例如：
 
 ```text
-/Users/mason/project/pdf2skills/pdf/你的文件.pdf
-```
-
-2. 在项目根目录打开 Claude Code
-
-3. 直接运行：
-
-```text
-/pdf2skills /Users/mason/project/pdf2skills/pdf/你的文件.pdf
-```
-
-如果输入是 Markdown：
-
-```text
-/pdf2skills /Users/mason/project/pdf2skills/pdf/你的文件.md
-```
-
-输出会出现在输入文件同级目录：
-
-```text
-/Users/mason/project/pdf2skills/pdf/你的文件_output/
-```
-
-### 5. 在 Claude Code 中运行
-
-本仓库已经内置项目级 skill：
-
-```text
-.claude/skills/pdf2skills/
-```
-
-因此在仓库根目录打开 Claude Code 后，可直接执行：
-
-```text
-/pdf2skills /绝对路径/到/你的文件.pdf
+/absolute/path/to/your-file.pdf
 ```
 
 或：
 
 ```text
-/pdf2skills /绝对路径/到/你的文件.md
+/absolute/path/to/your-file.md
 ```
+
+2. 在项目根目录执行对应命令或集成流程
+
+3. 输出会出现在输入文件同级目录：
+
+```text
+/absolute/path/to/your-file_output/
+```
+
+### 5. Skill 集成
+
+本仓库内置的 skill 定义位于：
+
+```text
+skills/pdf2skills/
+```
+
+如果你使用支持该目录约定的 agent/运行环境，可基于该 skill 直接集成；如果你更偏向脚本方式，也可以直接调用 Python CLI。
 
 ## Pipeline 工作流
 
@@ -184,7 +168,7 @@ PDF / Markdown → Chunks → Density → SKUs → Buckets → Skills → Optimi
    - PDF：按页读取并合成为 `full.md`
    - Markdown：直接作为 `full.md` 使用
 2. **语义分块**
-   - 使用 SubAgent 根据章节与语义边界切块
+   - 使用 Agent 根据章节与语义边界切块
 3. **密度分析**
    - Python 先打分，LLM 再做 calibration
 4. **SKU 提取**
@@ -192,7 +176,7 @@ PDF / Markdown → Chunks → Density → SKUs → Buckets → Skills → Optimi
 5. **知识融合**
    - 做相似度分桶、标签和对象归一化
 6. **Skill 生成**
-   - 每个 bucket 生成一个或多个 Claude Code Skill
+   - 每个 bucket 生成一个或多个可供 agent 集成的 skill
 7. **Skill 优化**
    - 使用 `skill-creator` 评估并优化 skill description 与触发边界
 8. **路由与术语表**
@@ -202,11 +186,10 @@ PDF / Markdown → Chunks → Density → SKUs → Buckets → Skills → Optimi
 
 ```text
 pdf2skills/
-├── .claude/
-│   └── skills/
-│       └── pdf2skills/
-│           ├── SKILL.md
-│           └── prompts/
+├── skills/
+│   └── pdf2skills/
+│       ├── SKILL.md
+│       └── prompts/
 ├── src/
 │   ├── cli.py
 │   ├── pipeline/
@@ -235,7 +218,7 @@ pdf2skills/
 | 值 | 说明 | 需要配置 |
 |----|------|----------|
 | `auto` | 自动选择最优解析器 | 否 |
-| `claude` | 使用 Claude Code Read tool | 否 |
+| `claude` | 使用运行环境内置文档读取能力 | 否 |
 | `mineru` | 使用 MinerU 云 API | `MINERU_API_KEY` |
 | `llm` | PyPDF2 提取 + 外部 LLM 重组 Markdown | `LLM_PROVIDER` + API Key |
 | `pypdf2` | 纯本地解析 | 否 |
@@ -325,9 +308,8 @@ python -m pytest tests/test_density.py -v
 
 ## 相关文件
 
-- 项目指南：`CLAUDE.md`
-- 主 skill：`.claude/skills/pdf2skills/SKILL.md`
-- SubAgent prompts：`.claude/skills/pdf2skills/prompts/`
+- 主 skill：`skills/pdf2skills/SKILL.md`
+- SubAgent prompts：`skills/pdf2skills/prompts/`
 
 ## 许可证
 

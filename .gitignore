@@ -16,9 +16,8 @@ htmlcov/
 *.so
 .DS_Store
 _reference/
-output/*
-!output/.gitkeep
 .pdf2skills/
-pdf/*
-!pdf/.gitkeep
+pdf/
+output/
+CLAUDE.md
 install.sh

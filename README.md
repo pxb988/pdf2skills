@@ -109,11 +109,41 @@ pdf/
 例如：
 
 ```text
-pdf/写作是门手艺/写作是门手艺.md
-→ pdf/写作是门手艺/写作是门手艺_output/
+pdf/你的文件.md
+→ pdf/你的文件_output/
 ```
 
-### 4. 在 Claude Code 中运行
+### 4. 最短操作清单
+
+如果环境已经装好，之后每次只要做这几步：
+
+1. 把文件放进 `pdf/` 目录，例如：
+
+```text
+/Users/mason/project/pdf2skills/pdf/你的文件.pdf
+```
+
+2. 在项目根目录打开 Claude Code
+
+3. 直接运行：
+
+```text
+/pdf2skills /Users/mason/project/pdf2skills/pdf/你的文件.pdf
+```
+
+如果输入是 Markdown：
+
+```text
+/pdf2skills /Users/mason/project/pdf2skills/pdf/你的文件.md
+```
+
+输出会出现在输入文件同级目录：
+
+```text
+/Users/mason/project/pdf2skills/pdf/你的文件_output/
+```
+
+### 5. 在 Claude Code 中运行
 
 本仓库已经内置项目级 skill：
 
@@ -246,22 +276,11 @@ python -m src.cli similarity <skus_dir> -t 0.5
 python -m src.cli parse-pdf <pdf> -o <out_dir>
 ```
 
-## 示例：写作类知识到工作流技能
+## 示例输出说明
 
-本仓库已用《写作是门手艺》跑过一轮完整样例，输出位于：
+pdf2skills 的默认输出会写到**输入文件同级目录**，用于保存一次完整运行产生的中间产物和最终技能包。
 
-```text
-output/写作是门手艺_output/
-```
-
-这次样例里：
-- 先生成了 **110 个原子 skills**
-- 再进一步筛选、整理为面向研究生论文写作的 **workflow skills**
-- workflow 说明见：`output/写作是门手艺_output/generated_skills/workflow/README.md`
-
-说明：这个示例目录当前位于仓库中的 `output/` 之下，用于展示一次真实跑通的结果；而 pdf2skills skill 的默认运行输出仍以**输入文件同级目录**为准。
-
-这类结果适合用来：
+这类输出通常适合用来：
 - 验证 pipeline 输出质量
 - 演示如何从原子 skill 收敛到场景化 skill 包
 - 为后续 router / glossary / trigger 优化提供参考
@@ -309,7 +328,6 @@ python -m pytest tests/test_density.py -v
 - 项目指南：`CLAUDE.md`
 - 主 skill：`.claude/skills/pdf2skills/SKILL.md`
 - SubAgent prompts：`.claude/skills/pdf2skills/prompts/`
-- workflow 示例：`output/写作是门手艺_output/generated_skills/workflow/README.md`
 
 ## 许可证
 

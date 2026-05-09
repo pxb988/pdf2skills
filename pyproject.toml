@@ -24,5 +24,8 @@ dev = ["pytest>=7.0", "pytest-cov"]
 [project.scripts]
 pdf2skills = "src.cli:main"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
